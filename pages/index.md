@@ -1,7 +1,7 @@
 ---
 title: Kapibarian Demo @CraftAI - Player Insights
 hide_header: true
-hide_breadcrumbs: false
+hide_breadcrumbs: true
 hide_toc: true
 sidebar: never
 ---
@@ -43,8 +43,8 @@ from ${base}
 <Grid cols=4>
     <BigValue data={kpis} value=total_sessions title="Total Play Sessions" fmt=num0/>
     <BigValue data={kpis} value=unique_players title="Unique Players" fmt=num0/>
-    <BigValue data={kpis} value=completion_rate title="Completion Rate" fmt=pct1/>
-    <BigValue data={kpis} value=avg_duration_mmss title="Avg. Session Duration (mm:ss)" fmt="@"/>
+    <BigValue data={kpis} value=completion_rate title="Completion Rate" fmt=pct0/>
+    <BigValue data={kpis} value=avg_duration_mmss title="Avg. Activity Duration (mm:ss)" fmt="@"/>
 </Grid>
 
 ## Activity Engagement
@@ -102,7 +102,7 @@ order by 1
     x=hour
     y=sessions
     title="Play Sessions by Hour"
-    subtitle="Booth traffic across the demo period"
+    echartsOptions={{tooltip: {formatter: (params) => `Sessions: ${params[0].value[1]}`}}}
 />
 
 ## Who's Playing
@@ -110,19 +110,14 @@ order by 1
 ```sql occupation_breakdown
 select
     case
-        when occupation is null then 'Not specified'
-        when occupation ilike '%ครู%' or occupation ilike '%ศึกษานิเทศก์%' or occupation ilike '%ผู้บริหารการศึกษา%' then 'Teacher / Education staff'
-        when occupation ilike '%นักเรียน%' or occupation ilike '%นักศึกษา%' then 'Student'
-        when occupation ilike '%นักวิจัย%' or occupation ilike '%research%' then 'Researcher'
-        when occupation ilike '%ผู้ปกครอง%' then 'Parent'
-        when occupation ilike '%software%' or occupation ilike '%วิศวกร%' or occupation ilike '%โปรแกรมเมอร์%' then 'Tech / Engineering'
-        when occupation ilike '%พนัก%' or occupation ilike '%รับจ้าง%' or occupation ilike '%ธุรกิจ%' then 'Employee / Business'
-        else 'Other'
+        when occupation is null then 'ไม่ระบุ'
+        when occupation in ('นักเรียน', 'ครู', 'ผู้บริหารการศึกษา', 'ผู้ปกครอง', 'นักวิจัย', 'นักการศึกษา') then occupation
+        else 'อื่น ๆ'
     end as occupation_group,
     count(distinct userId) as players
 from ${base}
 group by 1
-order by players desc
+order by occupation_group = 'อื่น ๆ', players desc
 ```
 
 ```sql age_breakdown
@@ -160,7 +155,7 @@ order by
         y=players
         title="Players by Occupation"
         swapXY=true
-        sort=true
+        sort=false
     />
     <BarChart
         data={age_breakdown}
@@ -196,3 +191,68 @@ order by sessions desc
     <Column id=sessions title="Sessions"/>
     <Column id=activities_tried title="Activities Tried"/>
 </DataTable>
+
+## Insight
+
+```sql occupation_edu
+select
+    sum(case when occ_group = 'Student' then 1 else 0 end) as student_players,
+    sum(case when occ_group = 'Teacher / Education staff' then 1 else 0 end) as teacher_players,
+    sum(case when occ_group in ('Student', 'Teacher / Education staff') then 1 else 0 end) * 1.0 / count(*) as edu_share
+from (
+    select distinct
+        userId,
+        case
+            when occupation is null then 'Not specified'
+            when occupation ilike '%ครู%' or occupation ilike '%ศึกษานิเทศก์%' or occupation ilike '%ผู้บริหารการศึกษา%' then 'Teacher / Education staff'
+            when occupation ilike '%นักเรียน%' or occupation ilike '%นักศึกษา%' then 'Student'
+            when occupation ilike '%นักวิจัย%' or occupation ilike '%research%' then 'Researcher'
+            when occupation ilike '%ผู้ปกครอง%' then 'Parent'
+            when occupation ilike '%software%' or occupation ilike '%วิศวกร%' or occupation ilike '%โปรแกรมเมอร์%' then 'Tech / Engineering'
+            when occupation ilike '%พนัก%' or occupation ilike '%รับจ้าง%' or occupation ilike '%ธุรกิจ%' then 'Employee / Business'
+            else 'Other'
+        end as occ_group
+    from ${base}
+)
+```
+
+```sql age_top
+select age_group, players, players * 1.0 / (select count(distinct userId) from ${base}) as share
+from (
+    select
+        case
+            when age is null then 'Not specified'
+            when age < 13 then '<13'
+            when age between 13 and 17 then '13-17'
+            when age between 18 and 24 then '18-24'
+            when age between 25 and 34 then '25-34'
+            when age between 35 and 44 then '35-44'
+            when age between 45 and 59 then '45-59'
+            else '60+'
+        end as age_group,
+        count(distinct userId) as players
+    from ${base}
+    group by 1
+)
+order by players desc
+limit 1
+```
+
+```sql depth
+with per_user as (
+    select userId, count(distinct activity_name) as activities_tried
+    from ${base}
+    group by 1
+)
+select
+    sum(case when activities_tried = 1 then 1 else 0 end) as single_activity_players,
+    sum(case when activities_tried = 1 then 1 else 0 end) * 1.0 / count(*) as single_activity_share,
+    sum(case when activities_tried >= 2 then 1 else 0 end) as multi_activity_players,
+    sum(case when activities_tried >= 2 then 1 else 0 end) * 1.0 / count(*) as multi_activity_share,
+    max(activities_tried) as max_activities
+from per_user
+```
+
+กลุ่มอาชีพที่มาเล่นเยอะที่สุดคือนักเรียน/นักศึกษา (<Value data={occupation_edu} column=student_players fmt=num0/> คน) รองลงมาคือครูและบุคลากรทางการศึกษา (<Value data={occupation_edu} column=teacher_players fmt=num0/> คน) รวมกันคิดเป็น <Value data={occupation_edu} column=edu_share fmt=pct0/> ของผู้เล่นทั้งหมด ส่วนช่วงอายุที่มาเล่นเยอะที่สุดคือ <Value data={age_top} column=age_group/> ปี
+
+ผู้เล่น <Value data={depth} column=single_activity_share fmt=pct0/> (<Value data={depth} column=single_activity_players fmt=num0/> คน) ลองแค่กิจกรรมเดียวแล้วออกจากบูธไป ในขณะที่อีก <Value data={depth} column=multi_activity_share fmt=pct0/> (<Value data={depth} column=multi_activity_players fmt=num0/> คน) เล่นต่อเนื่องตั้งแต่ 2 กิจกรรมขึ้นไป โดยผู้เล่นที่เล่นเยอะที่สุดลองไปถึง <Value data={depth} column=max_activities fmt=num0/> กิจกรรมในวันเดียว

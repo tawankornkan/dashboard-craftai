@@ -82,7 +82,7 @@ from ${sessions}
     <BigValue data={kpis} value=total_sessions title="Total Sessions" fmt=num0/>
     <BigValue data={kpis} value=activities_tried title="Activities Tried" fmt=num0/>
     <BigValue data={kpis} value=completion_rate title="Completion Rate" fmt=pct1/>
-    <BigValue data={kpis} value=avg_duration_mmss title="Avg. Session Duration (mm:ss)" fmt="@"/>
+    <BigValue data={kpis} value=avg_duration_mmss title="Avg. Activity Duration (mm:ss)" fmt="@"/>
 </Grid>
 
 ## Activity History
