@@ -1,7 +1,7 @@
 ---
 title: Kapibarian Demo @CraftAI - Player Insights
 hide_header: true
-hide_breadcrumbs: true
+hide_breadcrumbs: false
 hide_toc: true
 sidebar: never
 ---
@@ -32,7 +32,11 @@ select
     count(distinct userId) as unique_players,
     count(finished_at) as completed_sessions,
     count(finished_at) * 1.0 / count(*) as completion_rate,
-    avg(epoch(finished_at) - epoch(started_at)) filter (where finished_at is not null) as avg_duration_sec
+    avg(epoch(finished_at) - epoch(started_at)) filter (where finished_at is not null) as avg_duration_sec,
+    lpad(floor(avg(epoch(finished_at) - epoch(started_at)) filter (where finished_at is not null) / 60)::bigint::varchar, 2, '0')
+        || ':' ||
+        lpad((round(avg(epoch(finished_at) - epoch(started_at)) filter (where finished_at is not null))::bigint % 60)::varchar, 2, '0')
+        as avg_duration_mmss
 from ${base}
 ```
 
@@ -40,7 +44,7 @@ from ${base}
     <BigValue data={kpis} value=total_sessions title="Total Play Sessions" fmt=num0/>
     <BigValue data={kpis} value=unique_players title="Unique Players" fmt=num0/>
     <BigValue data={kpis} value=completion_rate title="Completion Rate" fmt=pct1/>
-    <BigValue data={kpis} value=avg_duration_sec title="Avg. Session Duration (sec)" fmt=num0/>
+    <BigValue data={kpis} value=avg_duration_mmss title="Avg. Session Duration (mm:ss)" fmt="@"/>
 </Grid>
 
 ## Activity Engagement
@@ -171,18 +175,20 @@ order by
 
 ```sql player_detail
 select
+    userId,
     coalesce(nickname, '(no name)') as nickname,
     coalesce(occupation, 'Not specified') as occupation,
     coalesce(affiliation, 'Not specified') as affiliation,
     age,
     count(*) as sessions,
     count(distinct activity_name) as activities_tried,
+    '/player/' || userId as link
 from ${base}
-group by 1, 2, 3, 4
+group by 1, 2, 3, 4, 5
 order by sessions desc
 ```
 
-<DataTable data={player_detail} search=true>
+<DataTable data={player_detail} search=true link=link>
     <Column id=nickname title="Nickname"/>
     <Column id=occupation title="Occupation"/>
     <Column id=affiliation title="Affiliation"/>
