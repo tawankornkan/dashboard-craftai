@@ -3,6 +3,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: 'main' # or whichever branch you want to deploy from
+  schedule:
+    # Refresh data every hour
+    - cron: '0 * * * *'
 
 jobs:
   build:
