@@ -1,6 +1,6 @@
 ---
 title: Kapibarian Demo @CraftAI - Player Insights
-hide_header: false
+hide_header: true
 hide_breadcrumbs: true
 hide_toc: true
 sidebar: never
