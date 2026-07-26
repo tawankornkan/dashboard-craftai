@@ -1,4 +1,4 @@
-.evidence/template
+.evidence
 .svelte-kit
 build
 node_modules
@@ -7,7 +7,5 @@ static/data
 *.options.yaml
 .vscode/settings.json
 .env
-.evidence/meta
-.evidence/customization
 .playwright-mcp
 .claude
