@@ -1,0 +1,13 @@
+diff --git a/node_modules/@evidence-dev/component-utilities/src/echartsThemes.js b/node_modules/@evidence-dev/component-utilities/src/echartsThemes.js
+index 20bd4ed..64f9d60 100644
+--- a/node_modules/@evidence-dev/component-utilities/src/echartsThemes.js
++++ b/node_modules/@evidence-dev/component-utilities/src/echartsThemes.js
+@@ -20,7 +20,7 @@ const createTheme = (mode) => {
+ 		darkMode: mode === 'dark', // if true, echarts will automatically update the font colour to work better on dark background
+ 		backgroundColor: themes[mode].colors['base-100'],
+ 		textStyle: {
+-			fontFamily: ['Inter', 'sans-serif']
++			fontFamily: ['Anuphan', 'Inter', 'sans-serif']
+ 		},
+ 		grid: {
+ 			left: '1%',

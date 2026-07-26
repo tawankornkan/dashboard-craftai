@@ -6,7 +6,7 @@ hide_toc: true
 sidebar: never
 ---
 
-Who's playing the [Kapibarian Demo](https://craft-ai.demo.kapibarian.com/), and how are they engaging with it.
+On July 12, 2026, who's playing the [Kapibarian Demo](https://craft-ai.demo.kapibarian.com/), and how are they engaging with it?
 
 ```sql base
 select
